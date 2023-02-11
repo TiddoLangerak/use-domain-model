@@ -60,7 +60,23 @@ function createObject(): Counter {
     return obj;
 }
 
+class NestedObject implements Counter {
+    nested;
+    constructor() {
+        this.nested = { count: 0 };
+    }
 
+    incrementBound = () => this.nested.count++;
+    incrementUnbound() { this.nested.count++; };
+    incrementBoundAsync = async () => this.nested.count++;
+    async incrementUnboundAsync() { this.nested.count++; };
+    incrementBoundTimeout = () => {
+        setTimeout(() => this.nested.count++);
+    }
+    incrementUnboundTimeout() {
+        setTimeout(() => this.nested.count++);
+    }
+}
 
 tap.test("watch", async t => {
     t.test("object", async t => {
@@ -106,13 +122,16 @@ tap.test("watch", async t => {
         t.test("object", async t => {
             await check(t, createObject);
         });
+
+        t.test("nested", async t => {
+            await check(t, () => new NestedObject());
+        });
     });
 });
 
 const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // TODO:
-// - Nested objects
 // - Getters
 // - Arrays
 // - Test repeated adding watchers
