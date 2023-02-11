@@ -3,19 +3,18 @@ import sinon from 'sinon';
 import { watch } from './index';
 
 interface Counter {
-    incrementBound: () => unknown;
-    incrementUnbound: () => unknown;
-    incrementBoundAsync: () => Promise<any>;
-    incrementUnboundAsync: () => Promise<any>;
-    incrementBoundTimeout: () => unknown;
-    incrementUnboundTimeout: () => unknown;
+    incrementBound: null | ( () => unknown);
+    incrementUnbound: null | ( () => unknown);
+    incrementBoundAsync: null | ( () => Promise<any>);
+    incrementUnboundAsync: null | ( () => Promise<any>);
+    incrementBoundTimeout: null | ( () => unknown);
+    incrementUnboundTimeout: null | (() => unknown);
 }
 
 class Base implements Counter {
-    count: number;
-    construtor() {
-        this.count = 0;
-    }
+    count: number = 0;
+    construtor() {}
+
     incrementBound = () => this.count++;
     incrementUnbound() { this.count++; };
     incrementBoundAsync = async () => this.count++;
@@ -29,6 +28,39 @@ class Base implements Counter {
 }
 
 class InheritedChild extends Base {}
+
+class BaseCounter {
+    count: number = 0;
+    constructor() {}
+}
+
+class ImplementedChild extends BaseCounter implements Counter {
+    incrementBound = () => this.count++;
+    incrementUnbound() { this.count++; };
+    incrementBoundAsync = async () => this.count++;
+    async incrementUnboundAsync() { this.count++; };
+    incrementBoundTimeout = () => {
+        setTimeout(() => this.count++);
+    }
+    incrementUnboundTimeout() {
+        setTimeout(() => this.count++);
+    }
+}
+
+function createObject(): Counter {
+    const obj = {
+        count: 0,
+        incrementUnbound: () => obj.count++,
+        incrementUnboundAsync: async () => obj.count++,
+        incrementUnboundTimeout: () => setTimeout(() => obj.count++),
+        incrementBound: null,
+        incrementBoundAsync: null,
+        incrementBoundTimeout: null,
+    };
+    return obj;
+}
+
+
 
 tap.test("watch", async t => {
     t.test("object", async t => {
@@ -44,31 +76,31 @@ tap.test("watch", async t => {
 
             t.notOk(cb.called, "Does not call onchange on construction");
 
-            await checkMethod(
+            c.incrementBound && await checkMethod(
                 "Increment bound",
                 () => c.incrementBound()
             );
-            await checkMethod(
+            c.incrementUnbound && await checkMethod(
                 "Increment unbound",
                 () => c.incrementUnbound()
             );
 
-            await checkMethod(
+            c.incrementBoundAsync && await checkMethod(
                 "Increment async bound",
                 () => c.incrementBoundAsync()
             );
 
-            await checkMethod(
+            c.incrementUnboundAsync && await checkMethod(
                 "Increment async unbound",
                 () => c.incrementUnboundAsync()
             );
 
-            await checkMethod(
+            c.incrementBoundTimeout && await checkMethod(
                 "Increment bound in timeout",
                 () => c.incrementBoundTimeout()
             );
 
-            await checkMethod(
+            c.incrementUnboundTimeout && await checkMethod(
                 "Increment unbound in timeout",
                 () => c.incrementUnboundTimeout()
             );
@@ -76,6 +108,18 @@ tap.test("watch", async t => {
 
         t.test("class", async t => {
             await check(t, new Base());
+        });
+
+        t.test("inherited methods", async t => {
+            await check(t, new InheritedChild());
+        });
+
+        t.test("child with state from base", async t => {
+            await check(t, new ImplementedChild());
+        });
+
+        t.test("object", async t => {
+            await check(t, createObject());
         });
     });
 });
