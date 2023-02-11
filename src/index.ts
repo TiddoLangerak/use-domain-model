@@ -4,6 +4,12 @@ export function watch<T extends object>(obj: T, onChange: () => void) {
 
         let val = obj[prop];
 
+        if (typeof val === 'object' && !!val) {
+            watch(val, onChange);
+        }
+
+        // TODO: test for after reassignment
+
         Object.defineProperty(obj, prop, {
             get() {
                 return val;

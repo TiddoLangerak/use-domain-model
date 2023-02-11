@@ -80,7 +80,7 @@ class NestedObject implements Counter {
 
 tap.test("watch", async t => {
     t.test("object", async t => {
-        async function check(t: Tap.Test, createCounter: () => Counter) {
+        async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
             async function checkMethod(op: keyof Counter) {
                 const c = createCounter();
                 if (!c[op]) {
@@ -89,6 +89,10 @@ tap.test("watch", async t => {
 
                 const cb = sinon.spy();
                 watch(c, cb);
+
+                prepare && prepare(c);
+
+                cb.resetHistory();
                 await c[op]();
                 await timeout(0);
                 t.ok(cb.calledOnce, op);
@@ -126,12 +130,22 @@ tap.test("watch", async t => {
         t.test("nested", async t => {
             await check(t, () => new NestedObject());
         });
+
+        t.test("nested", async t => {
+            await check(
+                t,
+                () => new NestedObject(),
+                { prepare: c => c.nested = { counter: 0 } }
+            );
+        });
+
     });
 });
 
 const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // TODO:
+// - Nested objects
 // - Getters
 // - Arrays
 // - Test repeated adding watchers
