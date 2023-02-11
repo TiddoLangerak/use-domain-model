@@ -2,16 +2,22 @@
   "name": "use-domain-model",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.ts",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tap --ts -Rspec"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "*",
+    "@types/sinon": "^10.0.13",
+    "@types/tap": "^15.0.8",
     "react": "^18.2.0",
+    "sinon": "^15.0.1",
+    "tap": "^16.3.4",
+    "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
   },
   "peerDependencies": {
