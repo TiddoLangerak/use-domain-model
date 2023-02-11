@@ -124,8 +124,12 @@ tap.test("watch", async t => {
     });
 });
 
-// TODO:
-// - Subclasses
-// - Getters setters
-
 const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// TODO:
+// - Nested objects
+// - Getters
+// - Arrays
+// - Test repeated adding watchers
+// - Symbols?
+// - Obscure define property combinations?
