@@ -64,62 +64,47 @@ function createObject(): Counter {
 
 tap.test("watch", async t => {
     t.test("object", async t => {
-        async function check(t: Tap.Test, c: Counter) {
-            async function checkMethod(msg: string, op: () => unknown) {
-                cb.resetHistory();
-                await op();
+        async function check(t: Tap.Test, createCounter: () => Counter) {
+            async function checkMethod(op: keyof Counter) {
+                const c = createCounter();
+                if (!c[op]) {
+                    return;
+                }
+
+                const cb = sinon.spy();
+                watch(c, cb);
+                await c[op]();
                 await timeout(0);
-                t.ok(cb.calledOnce, msg);
+                t.ok(cb.calledOnce, op);
             }
+
+            const c = createCounter();
             const cb = sinon.spy();
             watch(c, cb);
-
             t.notOk(cb.called, "Does not call onchange on construction");
 
-            c.incrementBound && await checkMethod(
-                "Increment bound",
-                () => c.incrementBound()
-            );
-            c.incrementUnbound && await checkMethod(
-                "Increment unbound",
-                () => c.incrementUnbound()
-            );
-
-            c.incrementBoundAsync && await checkMethod(
-                "Increment async bound",
-                () => c.incrementBoundAsync()
-            );
-
-            c.incrementUnboundAsync && await checkMethod(
-                "Increment async unbound",
-                () => c.incrementUnboundAsync()
-            );
-
-            c.incrementBoundTimeout && await checkMethod(
-                "Increment bound in timeout",
-                () => c.incrementBoundTimeout()
-            );
-
-            c.incrementUnboundTimeout && await checkMethod(
-                "Increment unbound in timeout",
-                () => c.incrementUnboundTimeout()
-            );
+            await checkMethod("incrementBound");
+            await checkMethod("incrementUnbound");
+            await checkMethod("incrementBoundAsync");
+            await checkMethod("incrementUnboundAsync");
+            await checkMethod("incrementBoundTimeout");
+            await checkMethod("incrementUnboundTimeout");
         }
 
         t.test("class", async t => {
-            await check(t, new Base());
+            await check(t, () => new Base());
         });
 
         t.test("inherited methods", async t => {
-            await check(t, new InheritedChild());
+            await check(t, () => new InheritedChild());
         });
 
         t.test("child with state from base", async t => {
-            await check(t, new ImplementedChild());
+            await check(t, () => new ImplementedChild());
         });
 
         t.test("object", async t => {
-            await check(t, createObject());
+            await check(t, createObject);
         });
     });
 });
