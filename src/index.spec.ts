@@ -61,13 +61,15 @@ function createObject(): Counter {
 }
 
 class NestedObject implements Counter {
-    nested;
+    nested: { count: number };
     constructor() {
-        this.nested = { count: 0 };
-    }
+    this.nested = { count: 0 };
+}
 
     incrementBound = () => this.nested.count++;
-    incrementUnbound() { this.nested.count++; };
+    incrementUnbound() {
+        this.nested.count++;
+    };
     incrementBoundAsync = async () => this.nested.count++;
     async incrementUnboundAsync() { this.nested.count++; };
     incrementBoundTimeout = () => {
@@ -83,7 +85,7 @@ tap.test("watch", async t => {
         async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
             async function checkMethod(op: keyof Counter) {
                 const c = createCounter();
-                if (!c[op]) {
+                if (c[op] === null) {
                     return;
                 }
 
@@ -93,7 +95,7 @@ tap.test("watch", async t => {
                 prepare && prepare(c);
 
                 cb.resetHistory();
-                await c[op]();
+                await c[op]!();
                 await timeout(0);
                 t.ok(cb.calledOnce, op);
             }
@@ -135,7 +137,7 @@ tap.test("watch", async t => {
             await check(
                 t,
                 () => new NestedObject(),
-                { prepare: c => c.nested = { counter: 0 } }
+                { prepare: c => c.nested = { count: 0 } }
             );
         });
 

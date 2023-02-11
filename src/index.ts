@@ -16,10 +16,13 @@ export function watch<T extends object>(obj: T, onChange: () => void) {
             },
             set(newVal) {
                 val = newVal;
+                if (isWatchable(val)) {
+//                    watch(val, onChange);
+                }
                 onChange();
             },
-            configurable: original.configurable,
-            enumerable: original.enumerable,
+            configurable: original?.configurable,
+            enumerable: original?.enumerable,
         });
     }
 }

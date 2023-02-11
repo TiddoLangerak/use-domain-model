@@ -2,7 +2,9 @@
     "compilerOptions": {
         "sourceMap": true,
         "outDir": "lib",
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "strict": true,
+        "noImplicitAny": true
     },
     "include": ["src/**/*"]
 }
