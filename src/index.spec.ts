@@ -83,16 +83,21 @@ class NestedObject implements Counter {
 tap.test("watch", async t => {
     t.test("object", async t => {
         async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
-            async function checkMethod(op: keyof Counter) {
+            function setup() {
                 const c = createCounter();
-                if (c[op] === null) {
-                    return;
-                }
 
                 const cb = sinon.spy();
                 watch(c, cb);
 
                 prepare && prepare(c);
+                return { c,  cb };
+            }
+            async function checkMethod(op: keyof Counter) {
+                const { c, cb } = setup();
+
+                if (c[op] === null) {
+                    return;
+                }
 
                 cb.resetHistory();
                 await c[op]!();
@@ -100,10 +105,12 @@ tap.test("watch", async t => {
                 t.ok(cb.calledOnce, op);
             }
 
-            const c = createCounter();
-            const cb = sinon.spy();
-            watch(c, cb);
-            t.notOk(cb.called, "Does not call onchange on construction");
+            await t.test("setup", async () => {
+                const c = createCounter();
+                const cb = sinon.spy();
+                watch(c, cb);
+                t.notOk(cb.called, "Does not call onchange on construction");
+            });
 
             await checkMethod("incrementBound");
             await checkMethod("incrementUnbound");
