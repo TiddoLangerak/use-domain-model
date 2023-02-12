@@ -21,6 +21,7 @@ export function watch<T extends Watchable>(obj: T, onChange: () => void) {
             },
             set(newVal) {
                 val = newVal;
+                // TODO: unwatch original val
                 if (isWatchable(val)) {
                     watch(val, onChange);
                 }

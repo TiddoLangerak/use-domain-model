@@ -133,7 +133,7 @@ tap.test("watch", async t => {
             await check(t, () => new NestedObject());
         });
 
-        t.test("nested", async t => {
+        t.test("nested reassigned", async t => {
             await check(
                 t,
                 () => new NestedObject(),
@@ -148,6 +148,7 @@ const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // TODO:
 // - Nested objects
+//  -> unwatch reassigned
 // - Getters
 // - Arrays
 // - Test repeated adding watchers
