@@ -82,18 +82,18 @@ class NestedObject implements Counter {
 
 tap.test("watch", async t => {
     t.test("object", async t => {
+        function setup(c: Counter) {
+            const cb = sinon.spy();
+            watch(c, cb);
+
+            return  cb;
+        }
+
         async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
-            function setup() {
-                const c = createCounter();
-
-                const cb = sinon.spy();
-                watch(c, cb);
-
-                prepare && prepare(c);
-                return { c,  cb };
-            }
             async function checkMethod(op: keyof Counter) {
-                const { c, cb } = setup();
+                const c = createCounter();
+                const cb = setup(c);
+                prepare && prepare(c);
 
                 if (c[op] === null) {
                     return;
@@ -146,6 +146,16 @@ tap.test("watch", async t => {
                 () => new NestedObject(),
                 { prepare: c => c.nested = { count: 0 } }
             );
+        });
+
+        t.test("Removed nested fields", async t => {
+            const c = new NestedObject()
+            const cb = setup(c)
+            const removed = c.nested;
+            c.nested = { count: 0 };
+
+            removed.count++;
+            t.notOk(cb.called, "Removed fields do not trigger onchange");
         });
 
     });
