@@ -17,6 +17,13 @@ export function watch<T extends Watchable>(obj: T, onChange: () => void) {
             throw new Error("No value nor setter in the object");
         }
     }
+
+    const proto = Object.getPrototypeOf(obj);
+    if (isWatchable(proto) && proto !== Object) {
+        // TODO: Can we do this?!?
+        // TODO: needs tests
+        watch(proto, onChange);
+    }
 }
 
 // TODO: accessors on classes are set on prototype, and therefore not very suitable for the current approach.

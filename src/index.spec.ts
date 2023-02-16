@@ -217,6 +217,14 @@ tap.only("watch", async t => {
             await check(t, () => new Accessors());
         });
 
+        t.only("Accessors don't trigger sibbling instances", async t => {
+            const a = new Accessors();
+            const b = new Accessors();
+            const cb = setup(a);
+            b.count++;
+            t.notOk(cb.calledOnce, "Accessors don't trigger sibbling instances");
+        });
+
         t.test("Accessors stay active", async t => {
             let realCount = 0;
             const obj = {
