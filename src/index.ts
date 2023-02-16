@@ -7,28 +7,34 @@ function isWatchable(t: any): t is Watchable {
 
 export function watch<T extends Watchable>(obj: T, onChange: () => void) {
     for (const prop of Object.getOwnPropertyNames(obj)) {
-        const original = Object.getOwnPropertyDescriptor(obj, prop);
+        const descriptor = Object.getOwnPropertyDescriptor(obj, prop)!;
 
-        let val = (obj as Record<string, unknown>)[prop];
-
-        if (isWatchable(val)) {
-            watch(val, onChange);
+        if ('value' in descriptor) {
+            setupPropertyWatcher(obj, prop as keyof T, descriptor, onChange);
         }
+}
 
-        Object.defineProperty(obj, prop, {
-            get() {
-                return val;
-            },
-            set(newVal) {
-                val = newVal;
-                // TODO: unwatch original val
-                if (isWatchable(val)) {
-                    watch(val, onChange);
-                }
-                onChange();
-            },
-            configurable: original!.configurable,
-            enumerable: original!.enumerable,
-        });
+function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: () => void) {
+    let val = obj[prop];
+
+    if (isWatchable(val)) {
+        watch(val, onChange);
     }
+
+    Object.defineProperty(obj, prop, {
+        get() {
+            return val;
+        },
+        set(newVal) {
+            val = newVal;
+            // TODO: unwatch original val
+            if (isWatchable(val)) {
+                watch(val, onChange);
+            }
+            onChange();
+        },
+        configurable: descriptor.configurable,
+        enumerable: descriptor.enumerable,
+    });
+}
 }
