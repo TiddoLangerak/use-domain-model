@@ -225,6 +225,14 @@ tap.only("watch", async t => {
             t.notOk(cb.calledOnce, "Accessors don't trigger sibbling instances");
         });
 
+        // It's tempting to replace prototypes to support some advanced cases (like accessors),
+        // but this would break instanceof
+        t.only("Watching does not break instanceof checks", async t => {
+            const a = new Accessors();
+            setup(a);
+            t.ok(a instanceof Accessors, "Watching does not break instanceof checks");
+        });
+
         t.test("Accessors stay active", async t => {
             let realCount = 0;
             const obj = {

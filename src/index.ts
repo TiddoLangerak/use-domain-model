@@ -31,7 +31,7 @@ export function watch<T extends Watchable>(obj: T, onChange: () => void) {
 
 
 function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: () => void) {
-    let val = obj[prop];
+    let val = descriptor.value!;
 
     if (isWatchable(val)) {
         watch(val, onChange);
