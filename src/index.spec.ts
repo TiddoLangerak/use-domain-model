@@ -192,6 +192,21 @@ tap.test("watch", async t => {
             await check(t, () => new Accessors());
         });
 
+        t.test("Accessors stay active", async t => {
+            let realCount = 0;
+            const obj = {
+                get count() {
+                    return realCount + 2;
+                },
+                set count(val) {
+                    realCount = val * 5;
+                }
+            }
+            const cb = setup(obj);
+            obj.count = 2;
+            t.equal(obj.count, 12, "Getters and setters should be applied");
+        });
+
         t.test("Symbols", async t => {
             await check(t, () => new Symbols());
         });
@@ -262,8 +277,8 @@ tap.test("watch", async t => {
             const cb2 = setup(c2);
 
             shared.count++;
-            t.ok(cb1.calledOnce, "First callback called");
-            t.ok(cb2.calledOnce, "Second callback called");
+            t.equal(cb1.callCount, 1, "First callback called once");
+            t.equal(cb2.callCount, 1, "Second callback called once");
 
             cb1.resetHistory();
             cb2.resetHistory();
