@@ -207,7 +207,7 @@ tap.test("watch", async t => {
             c.nested = { count: 0 };
 
             removed.count++;
-            t.notOk(cb.calledOnce, "Removed fields do not trigger onchange");
+            t.notOk(cb.called, "Removed fields do not trigger onchange");
         });
 
         t.test("Removed deeply nested fields", async t => {
@@ -223,7 +223,7 @@ tap.test("watch", async t => {
             c.nested = { nested2: { count: 0 } };
 
             removed.nested2.count++;
-            t.notOk(cb.calledOnce, "Removed nested fields do not trigger onchange");
+            t.notOk(cb.called, "Removed nested fields do not trigger onchange");
         });
 
         t.test("Partially remove nested fields", async t => {
@@ -241,7 +241,7 @@ tap.test("watch", async t => {
             cb.resetHistory();
             c.b = { count: 0 };
             nested.count++;
-            t.notOk(cb.calledOnce, "Fully removed fields do not trigger onchange");
+            t.notOk(cb.called, "Fully removed fields do not trigger onchange");
         });
 
         t.test("Partially remove nested fields (reversed)", async t => {
@@ -251,7 +251,7 @@ tap.test("watch", async t => {
             const cb = setup(c);
             c.b = { count : 0 };
             c.a.count++;
-            t.ok(cb.calledOnce, "Partially removed fields do trigger onchange");
+            t.ok(cb.called, "Partially removed fields do trigger onchange");
         });
 
         t.test("Shared nested fields", async t => {
@@ -272,7 +272,7 @@ tap.test("watch", async t => {
             c1.a = { count: 0 };
             shared.count++;
 
-            t.notOk(cb1.calledOnce, "First callback no longer called");
+            t.notOk(cb1.called, "First callback no longer called");
             t.ok(cb2.calledOnce, "Second callback called");
         });
 
