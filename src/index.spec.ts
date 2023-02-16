@@ -335,11 +335,13 @@ tap.only("watch", async t => {
         t.test("Repeated watching", async t => {
             const obj = { count: 0 };
             const cb1 = setup(obj);
+            const descriptor = Object.getOwnPropertyDescriptor(obj, 'count');
             const cb2 = setup(obj);
 
             obj.count++;
             t.ok(cb1.calledOnce, "First callback called");
             t.ok(cb2.calledOnce, "Second callback called");
+            t.ok(descriptor === Object.getOwnPropertyDescriptor(obj, 'count'), "Property descriptor does not get unnecessarily overwritten")
         });
 
         t.test("Repeated watching on nested objects", async t => {
