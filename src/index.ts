@@ -5,7 +5,11 @@ function isWatchable(t: any): t is Watchable {
     return typeof t === 'object' && !!t;
 }
 
-export function watch<T extends Watchable>(obj: T, onChange: () => void, thiz: T = obj) {
+export function watch<T extends Watchable>(obj: T, onChange: () => void) {
+    return _watch(obj, obj, onChange);
+}
+
+function _watch<T extends Watchable>(obj: T, thiz: T = obj, onChange: () => void) {
     for (const prop of Object.getOwnPropertyNames(obj)) {
         const descriptor = Object.getOwnPropertyDescriptor(obj, prop)!;
 
@@ -22,7 +26,7 @@ export function watch<T extends Watchable>(obj: T, onChange: () => void, thiz: T
     if (isWatchable(proto) && proto !== Object) {
         // TODO: Can we do this?!?
         // TODO: needs tests
-        watch(proto, onChange, thiz);
+        _watch(proto, thiz, onChange);
     }
 }
 
