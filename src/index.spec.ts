@@ -102,6 +102,25 @@ function createObject(): Counter {
     return obj;
 }
 
+function createAccessorObject(): Counter {
+    let realCount = 0;
+    const obj = {
+        get count() {
+            return realCount;
+        },
+        set count(val) {
+            realCount = val;
+        },
+        incrementUnbound: () => obj.count++,
+        incrementUnboundAsync: async () => obj.count++,
+        incrementUnboundTimeout: () => setTimeout(() => obj.count++),
+        incrementBound: null,
+        incrementBoundAsync: null,
+        incrementBoundTimeout: null,
+    };
+    return obj;
+}
+
 class NestedObject implements Counter {
     nested: { count: number };
     constructor() {
@@ -122,14 +141,14 @@ class NestedObject implements Counter {
     }
 }
 
-tap.test("watch", async t => {
+tap.only("watch", async t => {
     function setup(c: Watchable) {
         const cb = sinon.spy();
         watch(c, cb);
 
         return  cb;
     }
-    t.test("object", async t => {
+    t.only("object", async t => {
 
         async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
             async function checkMethod(op: keyof Counter) {
@@ -178,6 +197,10 @@ tap.test("watch", async t => {
             await check(t, createObject);
         });
 
+        t.only("object with accessor", async t => {
+            await check(t, createAccessorObject);
+        });
+
         t.test("nested", async t => {
             await check(t, () => new NestedObject());
         });
@@ -190,7 +213,7 @@ tap.test("watch", async t => {
             );
         });
 
-        t.test("Accessors", async t => {
+        t.only("Accessors", async t => {
             await check(t, () => new Accessors());
         });
 
