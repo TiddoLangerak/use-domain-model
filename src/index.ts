@@ -1,22 +1,41 @@
 
 export type Watchable = object;
+export type CB = () => void;
 
 function isWatchable(t: any): t is Watchable {
     return typeof t === 'object' && !!t;
 }
 
-export function watch<T extends Watchable>(obj: T, onChange: () => void) {
+export function watch<T extends Watchable>(obj: T, onChange: CB) {
     return _watch(obj, obj, onChange);
 }
 
-function _watch<T extends Watchable>(obj: T, thiz: T = obj, onChange: () => void) {
+const watchers: WeakMap<Watchable, CB[]> = new WeakMap();
+
+function _watch<T extends Watchable>(obj: T, thiz: T = obj, onChange: CB) {
+    // TODO: do thsi conditionally
+    patchObject(obj);
+    const w = watchers.get(thiz) || [];
+    w.push(onChange);
+    watchers.set(thiz, w);
+}
+
+function patchObject<T extends Watchable>(obj: T) {
+    function onChange(thiz: any) {
+        (watchers.get(thiz) || []).forEach(cb => cb());
+    }
+    return _patchObject(obj, onChange);
+}
+
+function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void) {
+
     for (const prop of Object.getOwnPropertyNames(obj)) {
         const descriptor = Object.getOwnPropertyDescriptor(obj, prop)!;
 
         if ('value' in descriptor) {
-            setupPropertyWatcher(obj, thiz, prop as keyof T, descriptor, onChange);
+            setupPropertyWatcher(obj, prop as keyof T, descriptor, onChange);
         } else if ('set' in descriptor) {
-            setupAccessorWatcher(obj, thiz, prop as keyof T, descriptor, onChange);
+            setupAccessorWatcher(obj, prop as keyof T, descriptor, onChange);
         } else {
             throw new Error("No value nor setter in the object");
         }
@@ -26,7 +45,7 @@ function _watch<T extends Watchable>(obj: T, thiz: T = obj, onChange: () => void
     if (isWatchable(proto) && proto !== Object) {
         // TODO: Can we do this?!?
         // TODO: needs tests
-        _watch(proto, thiz, onChange);
+        _patchObject(proto, onChange);
     }
 }
 
@@ -34,11 +53,12 @@ function _watch<T extends Watchable>(obj: T, thiz: T = obj, onChange: () => void
 // However, we might be able to use proxies for this.
 
 
-function setupPropertyWatcher<T extends Watchable>(obj: T, thiz: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: () => void) {
+function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: (thiz: T) => void) {
     let val = descriptor.value!;
 
     if (isWatchable(val)) {
-        watch(val, onChange);
+        // TODO: need to fix this for nesting
+        _patchObject(val, onChange);
     }
 
     Object.defineProperty(obj, prop, {
@@ -48,12 +68,10 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, thiz: T, prop: keyof 
         set(newVal) {
             val = newVal;
             // TODO: unwatch original val
-            if (this === thiz) {
-                if (isWatchable(val)) {
-                    watch(val, onChange);
-                }
-                onChange();
+            if (isWatchable(val)) {
+                _patchObject(val, onChange);
             }
+            onChange(this);
         },
         configurable: descriptor.configurable,
         enumerable: descriptor.enumerable,
@@ -61,15 +79,13 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, thiz: T, prop: keyof 
 }
 
 // TODO: test accessors with nested values
-function setupAccessorWatcher<T extends Watchable>(obj: T, thiz: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: () => void) {
+function setupAccessorWatcher<T extends Watchable>(obj: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: (thiz: T) => void) {
 
     Object.defineProperty(obj, prop, {
         get: descriptor.get,
         set(newVal) {
             descriptor.set!(newVal);
-            if (this === thiz) {
-                onChange();
-            }
+            onChange(this);
         },
         configurable: descriptor.configurable,
         enumerable: descriptor.enumerable,

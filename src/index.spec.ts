@@ -193,11 +193,11 @@ tap.only("watch", async t => {
             await check(t, () => new ImplementedChild());
         });
 
-        t.test("object", async t => {
+        t.only("object", async t => {
             await check(t, createObject);
         });
 
-        t.only("object with accessor", async t => {
+        t.test("object with accessor", async t => {
             await check(t, createAccessorObject);
         });
 
@@ -213,11 +213,11 @@ tap.only("watch", async t => {
             );
         });
 
-        t.only("Accessors", async t => {
+        t.test("Accessors", async t => {
             await check(t, () => new Accessors());
         });
 
-        t.only("Accessors don't trigger sibbling instances", async t => {
+        t.test("Accessors don't trigger sibbling instances", async t => {
             const a = new Accessors();
             const b = new Accessors();
             const cb = setup(a);
@@ -227,7 +227,7 @@ tap.only("watch", async t => {
 
         // It's tempting to replace prototypes to support some advanced cases (like accessors),
         // but this would break instanceof
-        t.only("Watching does not break instanceof checks", async t => {
+        t.test("Watching does not break instanceof checks", async t => {
             const a = new Accessors();
             setup(a);
             t.ok(a instanceof Accessors, "Watching does not break instanceof checks");
