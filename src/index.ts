@@ -1,5 +1,5 @@
 
-type Watchable = object;
+export type Watchable = object;
 
 function isWatchable(t: any): t is Watchable {
     return typeof t === 'object' && !!t;
