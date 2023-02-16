@@ -47,16 +47,18 @@ class ImplementedChild extends BaseCounter implements Counter {
     }
 }
 
+const counts : WeakMap<Accessors, number> = new WeakMap();
 class Accessors implements Counter {
-    _count = 0;
     get count() {
-        return this._count;
+        return counts.get(this)!;
     }
     set count(val) {
-        this._count = val;
+        counts.set(this, counts.get(this)! + 1);
     }
 
-    construtor() {}
+    construtor() {
+        counts.set(this, 0);
+    }
 
     incrementBound = () => this.count++;
     incrementUnbound() { this.count++; };
