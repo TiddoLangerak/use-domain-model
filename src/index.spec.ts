@@ -121,6 +121,27 @@ function createAccessorObject(): Counter {
     return obj;
 }
 
+function createNestedAccessorObject(): Counter {
+    let realCount = 0;
+    const obj = {
+        nested: {
+            get count() {
+                return realCount;
+            },
+            set count(val) {
+                realCount = val;
+            },
+        },
+        incrementUnbound: () => obj.nested.count++,
+        incrementUnboundAsync: async () => obj.nested.count++,
+        incrementUnboundTimeout: () => setTimeout(() => obj.nested.count++),
+        incrementBound: null,
+        incrementBoundAsync: null,
+        incrementBoundTimeout: null,
+    };
+    return obj;
+}
+
 class NestedObject implements Counter {
     nested: { count: number };
     constructor() {
@@ -199,6 +220,10 @@ tap.only("watch", async t => {
 
         t.test("object with accessor", async t => {
             await check(t, createAccessorObject);
+        });
+
+        t.test("object with nested accessor", async t => {
+            await check(t, createNestedAccessorObject);
         });
 
         t.test("nested", async t => {
