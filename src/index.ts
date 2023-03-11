@@ -1,19 +1,6 @@
 export type Watchable = object;
 export type CB = () => void;
 
-const watchers: WeakMap<Watchable, CB[]> = new WeakMap();
-
-function getWatchers(target: Watchable) {
-    if (!watchers.has(target)) {
-        watchers.set(target, []);
-    }
-    return watchers.get(target)!;
-}
-
-function registerListener(obj: Watchable, onChange:CB) {
-    getWatchers(obj).push(onChange);
-}
-
 export function watch<T extends Watchable>(obj: T, onChange: CB) {
     attachGlobalListeners(obj);
     registerListener(obj, onChange);
@@ -27,21 +14,49 @@ export function watch<T extends Watchable>(obj: T, onChange: CB) {
     }
 }
 
+function registerListener(obj: Watchable, onChange: CB) {
+    getWatchers(obj).push(onChange);
+}
+
 function attachGlobalListeners<T extends Watchable>(obj: T) {
-    function onChange(thiz: any) {
-        (watchers.get(thiz) || []).forEach(cb => cb());
+    function onChange(thiz: Watchable) {
+        /**
+         * It's not imediately obvious why we pass `thiz` around here, as it
+         * seems that we could just as well use `obj`. However, that won't work:
+         *
+         * Lets say that we have 2 objects with the same prototype.
+         * E.g. they both are of class BaseClass
+         *
+         * When we watch the first one, then we'll not only patch the instance,
+         * but also it's prototype.
+         * When we watch the second one, we've already patched the prototype,
+         * so that will be skipped.
+         *
+         * But now let's say we have accessors defined on the class. Accessors
+         * end up on the prototype, not the instance, and hence these are only patched
+         * on watching the first instance. This also means that any triggers
+         * through the accessors will always end up calling the `onChange` created
+         * for the first watch, regardless on which instance the accessors are called.
+         *
+         * If we'd use `getWatchers(obj)`, then any time an accessor is called it would trigger
+         * the _first_ instance, even if the accessors are called on different instances.
+         *
+         * We therefore must explicitely pass the `this` object around, such that we can trigger
+         * the correct callbacks.
+         */
+        getWatchers(thiz).forEach(cb => cb());
     }
-    return _patchObject(obj, onChange);
+    return patchObject(obj, onChange);
 }
 
 const patched: WeakSet<Watchable> = new WeakSet();
 
-function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void) {
-
+function patchObject<T extends Watchable>(obj: T, onChange: (thiz: Watchable) => void) {
     if (patched.has(obj)) {
         return;
     }
 
+    // Patching direct props
     for (const prop of [...Object.getOwnPropertyNames(obj), ...Object.getOwnPropertySymbols(obj)]) {
         const descriptor = Object.getOwnPropertyDescriptor(obj, prop)!;
 
@@ -55,9 +70,12 @@ function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void
     }
     patched.add(obj);
 
+    // We'll also need to patch the proto. This is most relevant for accessors:
+    // When defining accessors on a class, these will end up on the prototype.
+    // We need to intercept those, too
     const proto = Object.getPrototypeOf(obj);
     if (isWatchable(proto) && proto !== Object) {
-        _patchObject(proto, onChange);
+        patchObject(proto, onChange);
     }
 }
 
@@ -76,9 +94,8 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
         set(newVal) {
             val = newVal;
             unwatch();
-            // TODO: unwatch original val
             if (isWatchable(val)) {
-                unwatch = watch(val, () => onChange(obj));
+                unwatch = watch(val, () => onChange(this));
             }
             onChange(this);
         },
@@ -103,3 +120,12 @@ function setupAccessorWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
 function isWatchable(t: any): t is Watchable {
     return typeof t === 'object' && !!t;
 }
+
+const watchers: WeakMap<Watchable, CB[]> = new WeakMap();
+function getWatchers(target: Watchable) {
+    if (!watchers.has(target)) {
+        watchers.set(target, []);
+    }
+    return watchers.get(target)!;
+}
+
