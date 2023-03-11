@@ -11,18 +11,13 @@ function isWatchable(t: any): t is Watchable {
     return typeof t === 'object' && !!t;
 }
 
-export function watch<T extends Watchable>(obj: T, onChange: CB) {
-    return _watch(obj, obj, onChange);
-}
-
 const watchers: WeakMap<Watchable, CB[]> = new WeakMap();
-
-function _watch<T extends Watchable>(obj: T, thiz: T = obj, onChange: CB) {
+export function watch<T extends Watchable>(obj: T, onChange: CB) {
     // TODO: do thsi conditionally
     patchObject(obj);
-    const w = watchers.get(thiz) || [];
+    const w = watchers.get(obj) || [];
     w.push(onChange);
-    watchers.set(thiz, w);
+    watchers.set(obj, w);
 }
 
 function patchObject<T extends Watchable>(obj: T) {
