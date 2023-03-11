@@ -278,6 +278,7 @@ tap.test("watch", async t => {
             const [cb] = setup(c)
             const removed = c.nested;
             c.nested = { count: 0 };
+            cb.resetHistory();
 
             removed.count++;
             t.notOk(cb.called, "Removed fields do not trigger onchange");
@@ -294,6 +295,7 @@ tap.test("watch", async t => {
             const [cb] = setup(c)
             const removed = c.nested;
             c.nested = { nested2: { count: 0 } };
+            cb.resetHistory();
 
             removed.nested2.count++;
             t.notOk(cb.called, "Removed nested fields do not trigger onchange");
@@ -306,13 +308,14 @@ tap.test("watch", async t => {
             const [cb] = setup(c);
             // And then we remove it from one of the fields
             c.a = { count : 0 };
+            cb.resetHistory();
             // But on the second field, it should still trigger
             c.b.count++;
             t.ok(cb.calledOnce, "Partially removed fields do trigger onchange");
 
             // And if we also remove the second field, then it should trigger no more
-            cb.resetHistory();
             c.b = { count: 0 };
+            cb.resetHistory();
             nested.count++;
             t.notOk(cb.called, "Fully removed fields do not trigger onchange");
         });
@@ -323,6 +326,7 @@ tap.test("watch", async t => {
             const c = { a: nested, b: nested };
             const [cb] = setup(c);
             c.b = { count : 0 };
+            cb.resetHistory();
             c.a.count++;
             t.ok(cb.called, "Partially removed fields do trigger onchange");
         });
@@ -343,6 +347,8 @@ tap.test("watch", async t => {
 
             // Unassignment...
             c1.a = { count: 0 };
+            cb1.resetHistory();
+            cb2.resetHistory();
             shared.count++;
 
             t.notOk(cb1.called, "First callback no longer called");
