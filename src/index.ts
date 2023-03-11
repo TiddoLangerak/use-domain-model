@@ -62,7 +62,7 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
     let val = descriptor.value!;
 
     if (isWatchable(val)) {
-        _patchObject(val, () => onChange(obj));
+        watch(val, () => onChange(obj));
     }
 
     Object.defineProperty(obj, prop, {
@@ -73,7 +73,7 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
             val = newVal;
             // TODO: unwatch original val
             if (isWatchable(val)) {
-                _patchObject(val, () => onChange(this));
+                watch(val, () => onChange(obj));
             }
             onChange(this);
         },
