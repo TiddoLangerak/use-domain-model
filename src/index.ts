@@ -79,7 +79,6 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
     });
 }
 
-// TODO: test accessors with nested values
 function setupAccessorWatcher<T extends Watchable>(obj: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: (thiz: T) => void) {
 
     Object.defineProperty(obj, prop, {
