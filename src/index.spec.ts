@@ -250,12 +250,19 @@ tap.test("watch", async t => {
 
         t.test("unwatch", async t => {
             const obj = {
-                x: 1
+                x: 1,
+                nested : {
+                    val: 2
+                }
             };
             const [cb, unwatch] = setup(obj);
             unwatch();
             obj.x = 2;
             t.notOk(cb.called, "After unwatch, the callback isn't triggered");
+
+            obj.nested.val = 3;
+            t.notOk(cb.called, "After unwatch, the callback isn't triggered for nested vals");
+
         });
 
         t.test("Symbols", async t => {
