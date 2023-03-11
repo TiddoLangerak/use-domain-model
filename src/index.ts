@@ -41,7 +41,7 @@ function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void
         return;
     }
 
-    for (const prop of Object.getOwnPropertyNames(obj)) {
+    for (const prop of [...Object.getOwnPropertyNames(obj), ...Object.getOwnPropertySymbols(obj)]) {
         const descriptor = Object.getOwnPropertyDescriptor(obj, prop)!;
 
         if ('value' in descriptor) {
