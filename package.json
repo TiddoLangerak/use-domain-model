@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "*",
+    "@types/node": "^18.15.0",
     "@types/sinon": "^10.0.13",
     "@types/tap": "^15.0.8",
     "react": "^18.2.0",

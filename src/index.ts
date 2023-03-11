@@ -36,6 +36,7 @@ function patchObject<T extends Watchable>(obj: T) {
 const patched: WeakSet<Watchable> = new WeakSet();
 
 function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void) {
+
     if (patched.has(obj)) {
         return;
     }

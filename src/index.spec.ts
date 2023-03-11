@@ -141,14 +141,14 @@ class NestedObject implements Counter {
     }
 }
 
-tap.test("watch", async t => {
+tap.only("watch", async t => {
     function setup(c: Watchable) {
         const cb = sinon.spy();
         const unwatch = watch(c, cb);
 
         return [cb, unwatch] as const;
     }
-    t.test("object", async t => {
+    t.only("object", async t => {
 
         async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
             async function checkMethod(op: keyof Counter) {
@@ -331,7 +331,10 @@ tap.test("watch", async t => {
             t.ok(cb.called, "Partially removed fields do trigger onchange");
         });
 
+        console.log("Before");
+
         t.test("Shared nested fields", async t => {
+            console.log("In");
             const shared = { count : 0 };
             const c1 = { a : shared };
             const c2 = { a : shared };
@@ -358,13 +361,20 @@ tap.test("watch", async t => {
         t.test("Repeated watching", async t => {
             const obj = { count: 0 };
             const [cb1] = setup(obj);
-            const descriptor = Object.getOwnPropertyDescriptor(obj, 'count');
+            const descriptor = Object.getOwnPropertyDescriptor(obj, 'count')!;
             const [cb2] = setup(obj);
 
             obj.count++;
             t.ok(cb1.calledOnce, "First callback called");
             t.ok(cb2.calledOnce, "Second callback called");
-            t.ok(descriptor === Object.getOwnPropertyDescriptor(obj, 'count'), "Property descriptor does not get unnecessarily overwritten")
+
+            // Note that "t.same" is broken here. It works fine in --only mode, but in
+            // full test mode we're getting some weird errors
+            t.ok(
+                equals(descriptor as any, Object.getOwnPropertyDescriptor(obj, 'count') as any),
+                "Property descriptor does not get unnecessarily overwritten"
+            );
+
         });
 
         t.test("Repeated watching on nested objects", async t => {
@@ -377,6 +387,18 @@ tap.test("watch", async t => {
         });
     });
 });
+
+function equals<T extends Record<string, unknown>>(a: T, b: T): boolean {
+    const aKeys = Object.keys(a).sort();
+    const bKeys = Object.keys(b).sort();
+    return arrEquals(aKeys, bKeys)
+        && aKeys.every(key => a[key] === b[key]);
+}
+
+function arrEquals<T>(a: T[], b: T[]): boolean {
+    return a.length === b.length
+        && a.every((el, i) => el === b[i]);
+}
 
 const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
