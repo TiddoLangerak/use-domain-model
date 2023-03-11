@@ -1,3 +1,8 @@
+/**
+ * TODO:
+ * getters and setters are on the prototype
+ * We can manually intercept the prototype and replace it with a proxy
+ */
 
 export type Watchable = object;
 export type CB = () => void;
@@ -57,8 +62,7 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
     let val = descriptor.value!;
 
     if (isWatchable(val)) {
-        // TODO: need to fix this for nesting
-        _patchObject(val, onChange);
+        _patchObject(val, () => onChange(obj));
     }
 
     Object.defineProperty(obj, prop, {
@@ -69,7 +73,7 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
             val = newVal;
             // TODO: unwatch original val
             if (isWatchable(val)) {
-                _patchObject(val, onChange);
+                _patchObject(val, () => onChange(this));
             }
             onChange(this);
         },
