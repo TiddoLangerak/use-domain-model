@@ -1,25 +1,33 @@
 export type Watchable = object;
 export type CB = () => void;
 
-function isWatchable(t: any): t is Watchable {
-    return typeof t === 'object' && !!t;
+const watchers: WeakMap<Watchable, CB[]> = new WeakMap();
+
+function getWatchers(target: Watchable) {
+    if (!watchers.has(target)) {
+        watchers.set(target, []);
+    }
+    return watchers.get(target)!;
 }
 
-const watchers: WeakMap<Watchable, CB[]> = new WeakMap();
+function registerListener(obj: Watchable, onChange:CB) {
+    getWatchers(obj).push(onChange);
+}
+
 export function watch<T extends Watchable>(obj: T, onChange: CB) {
-    patchObject(obj);
-    const w = watchers.get(obj) || [];
-    w.push(onChange);
-    watchers.set(obj, w);
+    attachGlobalListeners(obj);
+    registerListener(obj, onChange);
+
     return function unwatch() {
-        const idx = w.indexOf(onChange);
+        const watchers = getWatchers(obj);
+        const idx = watchers.indexOf(onChange);
         if (idx !== -1) {
-            w.splice(idx, 1);
+            watchers.splice(idx, 1);
         }
     }
 }
 
-function patchObject<T extends Watchable>(obj: T) {
+function attachGlobalListeners<T extends Watchable>(obj: T) {
     function onChange(thiz: any) {
         (watchers.get(thiz) || []).forEach(cb => cb());
     }
@@ -90,4 +98,8 @@ function setupAccessorWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
         configurable: descriptor.configurable,
         enumerable: descriptor.enumerable,
     });
+}
+
+function isWatchable(t: any): t is Watchable {
+    return typeof t === 'object' && !!t;
 }
