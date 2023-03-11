@@ -141,19 +141,19 @@ class NestedObject implements Counter {
     }
 }
 
-tap.only("watch", async t => {
+tap.test("watch", async t => {
     function setup(c: Watchable) {
         const cb = sinon.spy();
-        watch(c, cb);
+        const unwatch = watch(c, cb);
 
-        return  cb;
+        return [cb, unwatch] as const;
     }
-    t.only("object", async t => {
+    t.test("object", async t => {
 
         async function check<C extends Counter>(t: Tap.Test, createCounter: () => C, { prepare } : { prepare?: (t: C) => unknown } = {} ) {
             async function checkMethod(op: keyof Counter) {
                 const c = createCounter();
-                const cb = setup(c);
+                const [cb] = setup(c);
                 prepare && prepare(c);
 
                 if (c[op] === null) {
@@ -193,7 +193,7 @@ tap.only("watch", async t => {
             await check(t, () => new ImplementedChild());
         });
 
-        t.only("object", async t => {
+        t.test("object", async t => {
             await check(t, createObject);
         });
 
@@ -220,7 +220,7 @@ tap.only("watch", async t => {
         t.test("Accessors don't trigger sibbling instances", async t => {
             const a = new Accessors();
             const b = new Accessors();
-            const cb = setup(a);
+            const [cb] = setup(a);
             b.count++;
             t.notOk(cb.calledOnce, "Accessors don't trigger sibbling instances");
         });
@@ -243,9 +243,19 @@ tap.only("watch", async t => {
                     realCount = val * 5;
                 }
             }
-            const cb = setup(obj);
+            const [cb] = setup(obj);
             obj.count = 2;
             t.equal(obj.count, 12, "Getters and setters should be applied");
+        });
+
+        t.test("unwatch", async t => {
+            const obj = {
+                x: 1
+            };
+            const [cb, unwatch] = setup(obj);
+            unwatch();
+            obj.x = 2;
+            t.notOk(cb.called, "After unwatch, the callback isn't triggered");
         });
 
         t.test("Symbols", async t => {
@@ -258,7 +268,7 @@ tap.only("watch", async t => {
                     count: 0
                 }
             };
-            const cb = setup(c)
+            const [cb] = setup(c)
             const removed = c.nested;
             c.nested = { count: 0 };
 
@@ -274,7 +284,7 @@ tap.only("watch", async t => {
                     }
                 }
             };
-            const cb = setup(c)
+            const [cb] = setup(c)
             const removed = c.nested;
             c.nested = { nested2: { count: 0 } };
 
@@ -286,7 +296,7 @@ tap.only("watch", async t => {
             // Same nested object used twice in the watched object
             const nested = { count: 0 };
             const c = { a: nested, b: nested };
-            const cb = setup(c);
+            const [cb] = setup(c);
             // And then we remove it from one of the fields
             c.a = { count : 0 };
             // But on the second field, it should still trigger
@@ -304,7 +314,7 @@ tap.only("watch", async t => {
             // Same as above, but we remove b instead. This is to ensure that order doesn't matter.
             const nested = { count: 0 };
             const c = { a: nested, b: nested };
-            const cb = setup(c);
+            const [cb] = setup(c);
             c.b = { count : 0 };
             c.a.count++;
             t.ok(cb.called, "Partially removed fields do trigger onchange");
@@ -314,8 +324,8 @@ tap.only("watch", async t => {
             const shared = { count : 0 };
             const c1 = { a : shared };
             const c2 = { a : shared };
-            const cb1 = setup(c1);
-            const cb2 = setup(c2);
+            const [cb1] = setup(c1);
+            const [cb2] = setup(c2);
 
             shared.count++;
             t.equal(cb1.callCount, 1, "First callback called once");
@@ -334,9 +344,9 @@ tap.only("watch", async t => {
 
         t.test("Repeated watching", async t => {
             const obj = { count: 0 };
-            const cb1 = setup(obj);
+            const [cb1] = setup(obj);
             const descriptor = Object.getOwnPropertyDescriptor(obj, 'count');
-            const cb2 = setup(obj);
+            const [cb2] = setup(obj);
 
             obj.count++;
             t.ok(cb1.calledOnce, "First callback called");
@@ -346,8 +356,8 @@ tap.only("watch", async t => {
 
         t.test("Repeated watching on nested objects", async t => {
             const obj = { nested : { count: 0 } };
-            const cb1 = setup(obj.nested);
-            const cb2 = setup(obj);
+            const [cb1] = setup(obj.nested);
+            const [cb2] = setup(obj);
             obj.nested.count++;
             t.ok(cb1.calledOnce, "First callback called");
             t.ok(cb2.calledOnce, "Second callback called");

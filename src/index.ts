@@ -18,6 +18,12 @@ export function watch<T extends Watchable>(obj: T, onChange: CB) {
     const w = watchers.get(obj) || [];
     w.push(onChange);
     watchers.set(obj, w);
+    return function unwatch() {
+        const idx = w.indexOf(onChange);
+        if (idx !== -1) {
+            w.splice(idx, 1);
+        }
+    }
 }
 
 function patchObject<T extends Watchable>(obj: T) {
@@ -27,7 +33,12 @@ function patchObject<T extends Watchable>(obj: T) {
     return _patchObject(obj, onChange);
 }
 
+const patched: WeakSet<Watchable> = new WeakSet();
+
 function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void) {
+    if (patched.has(obj)) {
+        return;
+    }
 
     for (const prop of Object.getOwnPropertyNames(obj)) {
         const descriptor = Object.getOwnPropertyDescriptor(obj, prop)!;
@@ -40,6 +51,7 @@ function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void
             throw new Error("No value nor setter in the object");
         }
     }
+    patched.add(obj);
 
     const proto = Object.getPrototypeOf(obj);
     if (isWatchable(proto) && proto !== Object) {
@@ -55,9 +67,10 @@ function _patchObject<T extends Watchable>(obj: T, onChange: (thiz: any) => void
 
 function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descriptor: PropertyDescriptor, onChange: (thiz: T) => void) {
     let val = descriptor.value!;
+    let unwatch = () => {};
 
     if (isWatchable(val)) {
-        watch(val, () => onChange(obj));
+        unwatch = watch(val, () => onChange(obj));
     }
 
     Object.defineProperty(obj, prop, {
@@ -66,9 +79,10 @@ function setupPropertyWatcher<T extends Watchable>(obj: T, prop: keyof T, descri
         },
         set(newVal) {
             val = newVal;
+            unwatch();
             // TODO: unwatch original val
             if (isWatchable(val)) {
-                watch(val, () => onChange(obj));
+                unwatch = watch(val, () => onChange(obj));
             }
             onChange(this);
         },
